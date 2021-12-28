@@ -16,9 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --]]
 
-local cjson = require('cjson')
-local resty_hmac = require('resty.hmac')
-local resty_sha256 = require('resty.sha256')
+local openssl_hmac = require("resty.openssl.hmac")
+local openssl_digest = require("resty.openssl.digest")
 local str = require('resty.string')
 local ngx = _G.ngx
 
@@ -43,19 +42,19 @@ local function get_iso8601_basic_short(timestamp)
 end
 
 local function get_derived_signing_key(keys, timestamp, region, service)
-  local h_date = resty_hmac:new('AWS4' .. keys['secret_key'], resty_hmac.ALGOS.SHA256)
+  local h_date = openssl_hmac.new('AWS4' .. keys['secret_key'], "sha256")
   h_date:update(get_iso8601_basic_short(timestamp))
   local k_date = h_date:final()
 
-  local h_region = resty_hmac:new(k_date, resty_hmac.ALGOS.SHA256)
+  local h_region = openssl_hmac.new(k_date, "sha256")
   h_region:update(region)
   local k_region = h_region:final()
 
-  local h_service = resty_hmac:new(k_region, resty_hmac.ALGOS.SHA256)
+  local h_service = openssl_hmac.new(k_region, "sha256")
   h_service:update(service)
   local k_service = h_service:final()
 
-  local h = resty_hmac:new(k_service, resty_hmac.ALGOS.SHA256)
+  local h = openssl_hmac.new(k_service, "sha256")
   h:update('aws4_request')
   return h:final()
 end
@@ -72,7 +71,7 @@ local function get_signed_headers()
 end
 
 local function get_sha256_digest(s)
-  local h = resty_sha256:new()
+  local h = openssl_digest.new("sha256")
   h:update(s or '')
   return str.to_hex(h:final())
 end
@@ -99,9 +98,9 @@ local function get_string_to_sign(timestamp, region, service, host, uri)
 end
 
 local function get_signature(derived_signing_key, string_to_sign)
-  local h = resty_hmac:new(derived_signing_key, resty_hmac.ALGOS.SHA256)
+  local h = openssl_hmac.new(derived_signing_key, "sha256")
   h:update(string_to_sign)
-  return h:final(nil, true)
+  return str.to_hex(h:final())
 end
 
 local function get_authorization(keys, timestamp, region, service, host, uri)
