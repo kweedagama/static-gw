@@ -11,7 +11,7 @@ dependencies = {
    "lua >= 5.1",
    "lua-resty-http",
    "lua-resty-string",
-   "lua-resty-openssl"
+   "lua-resty-hmac-ffi"
 }
 
 build = {

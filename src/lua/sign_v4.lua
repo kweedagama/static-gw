@@ -1,5 +1,23 @@
+--[[
+Borrowed from: https://github.com/jobteaser/lua-resty-aws-signature with some slight tweaks.
+
+Copyright 2018 JobTeaser
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+--]]
+
 local cjson = require('cjson')
-local resty_hmac = require('resty.openssl.mac')
+local resty_hmac = require('resty.hmac')
 local resty_sha256 = require('resty.sha256')
 local str = require('resty.string')
 local ngx = _G.ngx
@@ -25,19 +43,19 @@ local function get_iso8601_basic_short(timestamp)
 end
 
 local function get_derived_signing_key(keys, timestamp, region, service)
-  local h_date = resty_hmac.new('AWS4' .. keys['secret_key'], 'HMAC', nil, 'sha256')
+  local h_date = resty_hmac:new('AWS4' .. keys['secret_key'], resty_hmac.ALGOS.SHA256)
   h_date:update(get_iso8601_basic_short(timestamp))
   local k_date = h_date:final()
 
-  local h_region = resty_hmac.new(k_date, 'HMAC', nil, 'sha256')
+  local h_region = resty_hmac:new(k_date, resty_hmac.ALGOS.SHA256)
   h_region:update(region)
   local k_region = h_region:final()
 
-  local h_service = resty_hmac.new(k_region, 'HMAC', nil, 'sha256')
+  local h_service = resty_hmac:new(k_region, resty_hmac.ALGOS.SHA256)
   h_service:update(service)
   local k_service = h_service:final()
 
-  local h = resty_hmac.new(k_service, 'HMAC', nil, 'sha256')
+  local h = resty_hmac:new(k_service, resty_hmac.ALGOS.SHA256)
   h:update('aws4_request')
   return h:final()
 end
@@ -81,7 +99,7 @@ local function get_string_to_sign(timestamp, region, service, host, uri)
 end
 
 local function get_signature(derived_signing_key, string_to_sign)
-  local h = resty_hmac.new(derived_signing_key, 'HMAC', nil, 'sha256')
+  local h = resty_hmac:new(derived_signing_key, resty_hmac.ALGOS.SHA256)
   h:update(string_to_sign)
   return h:final(nil, true)
 end
