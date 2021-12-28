@@ -26,9 +26,9 @@ reload:
 	openresty  -p $(PREFIX)  -c $(CONF) -s reload
 
 docker-start: clean
-	docker build -d -t kevinweedagamaio . \
+	docker build -t kevinweedagamaio . \
 	&& \
-    docker run -v $(CODE_DIR)/nginx/conf.d:/usr/local/openresty/nginx/conf/conf.d \
+    docker run -d -v $(CODE_DIR)/nginx/conf.d:/usr/local/openresty/nginx/conf/conf.d \
     -v $(CODE_DIR)/nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf \
     -v $(CODE_DIR)/nginx/logs:/usr/local/openresty/nginx/logs \
     -v $(CODE_DIR)/src/lua:/lua \
